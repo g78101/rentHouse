@@ -11,7 +11,7 @@ let countFail = 0;
 (async () => {
   let originPostId = await getFirstPostId();
   stopIntervalId = setInterval(async () => {
-    const headerInfo = await getToken(process.env.TARGET_URL);
+    const headerInfo = await getToken();
     const houseListURL = `https://rent.591.com.tw/home/search/rsList?${process.env.TARGET_URL.split('?')[1]}`;
     const csrfToken = headerInfo[0];
     const cookie = headerInfo[1];
@@ -48,11 +48,11 @@ let countFail = 0;
 })();
 
 const server = http.createServer(function (req, res) {
-  if(!serviceStatus){
-    console.error(`Service stopping.`)
-    res.writeHead(500,{'Content-Type':'text/html'});
-    return res.end('Service have some problem QQ plz check the log.');  
-  }
+  // if(!serviceStatus){
+  //   console.error(`Service stopping.`)
+  //   res.writeHead(500,{'Content-Type':'text/html'});
+  //   return res.end('Service have some problem QQ plz check the log.');  
+  // }
   if(req.url=='/ping'){
     console.log('我還活著!')
     res.writeHead(200,{'Content-Type':'text/html'});
