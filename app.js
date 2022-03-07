@@ -1,7 +1,3 @@
-/* eslint-disable no-restricted-syntax */
-/* eslint-disable guard-for-in */
-/* eslint-disable no-use-before-define */
-/* eslint-disable no-console */
 require('dotenv').config();
 const http = require('http');
 
@@ -10,6 +6,7 @@ const sendLineNotify = require('./lib/sendLineNotify');
 const getFirstPostId = require('./lib/getFirstPostId');
 const getToken = require('./lib/getToken');
 
+const subwayStation = JSON.parse(process.env.SUBWAY_STATION_FILTER);
 const lineTokens = JSON.parse(process.env.LINE_NOTIFY_TOKEN);
 
 let serviceStatus = true;
@@ -48,7 +45,15 @@ let countFail = 0;
       const { data } = resp.body.data;
       for (const rentDetail of data) {
         const postID = rentDetail.post_id;
+        const {
+          type: surroundingType = '',
+          desc: destination = '',
+          distance = '',
+        } = rentDetail.surrounding;
+
         if (postID === originPostId) break;
+        if (surroundingType === 'subway_station'
+            && subwayStationFilter(destination, distance) === false) continue;
 
         lineTokens.forEach(async (token) => {
           await sendLineNotify(
@@ -93,3 +98,13 @@ server.listen(process.env.PORT || 5000);
 console.log(
   `Node.js web server at port ${process.env.PORT || 5000} is running..`,
 );
+
+function subwayStationFilter(destination, distance) {
+  if (destination === '' || distance === '') return false;
+
+  destination = destination.slice(1);
+  distance = parseInt(distance.slice(0, -2), 10);
+  if (!subwayStation.includes(destination)) return false;
+  if (distance > 500) return false;
+  return true;
+}
