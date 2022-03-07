@@ -1,3 +1,6 @@
+/* eslint-disable no-restricted-syntax */
+/* eslint-disable guard-for-in */
+/* eslint-disable no-use-before-define */
 /* eslint-disable no-console */
 require('dotenv').config();
 const http = require('http');
@@ -6,6 +9,8 @@ const { getRequest } = require('./lib/request');
 const sendLineNotify = require('./lib/sendLineNotify');
 const getFirstPostId = require('./lib/getFirstPostId');
 const getToken = require('./lib/getToken');
+
+const lineTokens = JSON.parse(process.env.LINE_NOTIFY_TOKEN);
 
 let serviceStatus = true;
 let stopIntervalId;
@@ -41,15 +46,18 @@ let countFail = 0;
         throw `Token 可能過期了，目前 StatusCode: ${resp.statusCode}`;
       }
       const { data } = resp.body.data;
-      const targetData = data[0].post_id !== originPostId ? data[0].post_id : originPostId;
-      if (targetData === originPostId) return;
-      JSON.parse(process.env.LINE_NOTIFY_TOKEN).forEach(async (token) => {
-        await sendLineNotify(
-          `\nhttps://rent.591.com.tw/rent-detail-${targetData}.html`,
-          token,
-        );
-      });
-      originPostId = targetData;
+      for (const rentDetail of data) {
+        const postID = rentDetail.post_id;
+        if (postID === originPostId) break;
+
+        lineTokens.forEach(async (token) => {
+          await sendLineNotify(
+            `\nhttps://rent.591.com.tw/rent-detail-${postID}.html`,
+            token,
+          );
+        });
+      }
+      originPostId = data[0].post_id;
     } catch (error) {
       if (countFail > 10) {
         await sendLineNotify(
