@@ -105,6 +105,6 @@ function subwayStationFilter(destination, distance) {
   destination = destination.slice(1);
   distance = parseInt(distance.slice(0, -2), 10);
   if (!subwayStation.includes(destination)) return false;
-  if (distance > 500) return false;
+  if (distance > process.env.SUBWAY_STATION_DISTANCE) return false;
   return true;
 }
