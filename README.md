@@ -26,12 +26,15 @@ npm install
 
 7. 設定 `.env`
     ```
-    LINE_NOTIFY_TOKEN =         // the line notify token whitch you apply
-    TARGET_URL =                // the url whitch you get from 591
-    REQUEST_FREQUENCY =         // at least 1000
-    PORT =                      // 5000
-    SERVICE_STATUS =            // true or false
-    HEROKU_URL =                // https://<app_name>.herokuapp.com
+    LINE_NOTIFY_TOKENS =               // the line notify token whitch you apply, example: ["123","456"]
+    TARGET_URL =                       // the url whitch you get from 591
+    REQUEST_FREQUENCY =                // at least 1000
+    PORT =                             // 5000
+    SERVICE_STATUS =                   // true or false
+    HEROKU_URL =                       // <https://<app_name>.herokuapp.com>
+    ENABLE_SUBWAY_STATION_FILTER =     // enable filter distance of subway station, true or false
+    SUBWAY_STATION_FILTER =            // array of subway station filter, example: ["古亭站","公館站","景美站","東門站"]
+    SUBWAY_STATION_FILTER_DISTANCE =   // distance of subway station (m)
     ```
     > REQUEST_FREQUENCY 單位為毫秒，所以一秒就是 `1000`，建議不要調太低。
 

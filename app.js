@@ -6,6 +6,7 @@ const sendLineNotify = require('./lib/sendLineNotify');
 const getFirstPostId = require('./lib/getFirstPostId');
 const getToken = require('./lib/getToken');
 
+const isSubwayStationFilterEnabled = process.env.ENABLE_SUBWAY_STATION_FILTER === 'true';
 const subwayStation = JSON.parse(process.env.SUBWAY_STATION_FILTER);
 const lineTokens = JSON.parse(process.env.LINE_NOTIFY_TOKEN);
 
@@ -52,8 +53,10 @@ let countFail = 0;
         } = rentDetail.surrounding;
 
         if (postID === originPostId) break;
-        if (surroundingType === 'subway_station'
-            && subwayStationFilter(destination, distance) === false) continue;
+        if (isSubwayStationFilterEnabled
+          && surroundingType === 'subway_station'
+          && subwayStationFilter(destination, distance) === false
+        ) continue;
 
         lineTokens.forEach(async (token) => {
           await sendLineNotify(
