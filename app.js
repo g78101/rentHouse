@@ -1,14 +1,12 @@
-require('dotenv').config();
 const http = require('http');
 
 const { getRequest } = require('./lib/request');
 const sendLineNotify = require('./lib/sendLineNotify');
 const getFirstPostId = require('./lib/getFirstPostId');
 const getToken = require('./lib/getToken');
-
-const isSubwayStationFilterEnabled = process.env.ENABLE_SUBWAY_STATION_FILTER === 'true';
-const subwayStation = JSON.parse(process.env.SUBWAY_STATION_FILTER);
-const lineTokens = JSON.parse(process.env.LINE_NOTIFY_TOKEN);
+const {
+  houseListURL, herokuURL, port, requestFrquency, lineTokens, subwayStationFilter,
+} = require('./lib/getEnv');
 
 let serviceStatus = true;
 let stopIntervalId;
@@ -17,19 +15,14 @@ let countFail = 0;
   let originPostId = await getFirstPostId();
   stopIntervalId = setInterval(async () => {
     const headerInfo = await getToken();
-    const houseListURL = `https://rent.591.com.tw/home/search/rsList?${
-      process.env.TARGET_URL.split('?')[1]
-    }`;
     const csrfToken = headerInfo[0];
     const cookie = headerInfo[1];
-    const servicePing = await getRequest(`${process.env.HEROKU_URL}/ping`);
-    if (servicePing.statusCode !== 200) {
-      console.error('Ping fail plz check it.');
-      serviceStatus = false;
+
+    serviceStatus = checkHerokuServiceStatus();
+    if (serviceStatus === false) {
       clearInterval(stopIntervalId);
-    } else {
-      serviceStatus = true;
     }
+
     try {
       const resp = await getRequest({
         url: houseListURL,
@@ -45,7 +38,7 @@ let countFail = 0;
       }
       const { data } = resp.body.data;
       for (const rentDetail of data) {
-        const postID = rentDetail.post_id;
+        const { post_id: postID } = rentDetail;
         const {
           type: surroundingType = '',
           desc: destination = '',
@@ -53,9 +46,9 @@ let countFail = 0;
         } = rentDetail.surrounding;
 
         if (postID === originPostId) break;
-        if (isSubwayStationFilterEnabled
+        if (subwayStationFilter.enable
           && surroundingType === 'subway_station'
-          && subwayStationFilter(destination, distance) === false
+          && isSubwayStationNearby(destination, distance) === false
         ) continue;
 
         lineTokens.forEach(async (token) => {
@@ -68,16 +61,18 @@ let countFail = 0;
       originPostId = data[0].post_id;
     } catch (error) {
       if (countFail > 10) {
-        await sendLineNotify(
-          `\n好像出事了! 但是我嘗試重新拿 Token 第 ${countFail} 次了所以暫時先把程式關閉，有空可以檢查一下。\n `,
-          process.env.LINE_NOTIFY_TOKEN,
-        );
+        lineTokens.forEach(async (token) => {
+          await sendLineNotify(
+            `\n好像出事了! 但是我嘗試重新拿 Token 第 ${countFail} 次了所以暫時先把程式關閉，有空可以檢查一下。\n `,
+            token,
+          );
+        });
         clearInterval(stopIntervalId);
       }
       console.error(`Fetch the 591 rent fail: ${error}`);
       countFail += 1;
     }
-  }, process.env.REQUEST_FREQUENCY);
+  }, requestFrquency);
 })();
 
 const server = http.createServer((req, res) => {
@@ -96,18 +91,27 @@ const server = http.createServer((req, res) => {
   return res.end('Invalid Request!');
 });
 
-server.listen(process.env.PORT || 5000);
+server.listen(port);
 
 console.log(
-  `Node.js web server at port ${process.env.PORT || 5000} is running..`,
+  `Node.js web server at port ${port} is running..`,
 );
 
-function subwayStationFilter(destination, distance) {
+function isSubwayStationNearby(destination, distance) {
   if (destination === '' || distance === '') return false;
 
   destination = destination.slice(1);
   distance = parseInt(distance.slice(0, -2), 10);
-  if (!subwayStation.includes(destination)) return false;
-  if (distance > process.env.SUBWAY_STATION_DISTANCE) return false;
+  if (!subwayStationFilter.station.includes(destination)) return false;
+  if (distance > subwayStationFilter.distance) return false;
+  return true;
+}
+
+async function checkHerokuServiceStatus() {
+  const servicePing = await getRequest(`${herokuURL}/ping`);
+  if (servicePing.statusCode !== 200) {
+    console.error('Ping fail plz check it.');
+    return false;
+  }
   return true;
 }
