@@ -5,14 +5,14 @@ const sendLineNotify = require('./lib/sendLineNotify');
 const getFirstPostId = require('./lib/getFirstPostId');
 const getToken = require('./lib/getToken');
 const {
-  houseListURL, herokuURL, port, requestFrquency, lineTokens, subwayStationFilter,
+  houseListURLs, herokuURL, port, requestFrquency, lineTokens, subwayStationFilter,
 } = require('./lib/getEnv');
 
 let serviceStatus = true;
 let stopIntervalId;
 let countFail = 0;
-(async () => {
-  let originPostId = await getFirstPostId();
+houseListURLs.forEach(async (houseListURL) => {
+  let originPostId = await getFirstPostId(houseListURL);
   stopIntervalId = setInterval(async () => {
     const headerInfo = await getToken();
     const csrfToken = headerInfo[0];
@@ -73,7 +73,7 @@ let countFail = 0;
       countFail += 1;
     }
   }, requestFrquency);
-})();
+});
 
 const server = http.createServer((req, res) => {
   if (!serviceStatus) {
