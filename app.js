@@ -28,7 +28,7 @@ let countFail = 0;
         url: houseListURL,
         headers: {
           'X-CSRF-TOKEN': csrfToken,
-          Cookie: cookie,
+          Cookie: `urlJumpIp=3; ${cookie}`,
         },
         json: true,
       });
