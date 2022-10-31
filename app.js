@@ -14,9 +14,13 @@ let countFail = 0;
 houseListURLs.forEach(async (houseListURL) => {
   let originPostId = await getFirstPostId(houseListURL);
   stopIntervalId = setInterval(async () => {
+    const region = new URL(houseListURL).searchParams.get('region');
     const headerInfo = await getToken();
     const csrfToken = headerInfo[0];
-    const cookie = headerInfo[1];
+    let cookie = headerInfo[1];
+    if (region) {
+      cookie = `urlJumpIp=${region}; ${cookie}`;
+    }
 
     serviceStatus = checkHerokuServiceStatus();
     if (serviceStatus === false) {
@@ -28,7 +32,7 @@ houseListURLs.forEach(async (houseListURL) => {
         url: houseListURL,
         headers: {
           'X-CSRF-TOKEN': csrfToken,
-          Cookie: `urlJumpIp=3; ${cookie}`,
+          Cookie: cookie,
         },
         json: true,
       });
