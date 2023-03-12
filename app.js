@@ -5,7 +5,7 @@ const sendLineNotify = require('./lib/sendLineNotify');
 const getFirstPostId = require('./lib/getFirstPostId');
 const getToken = require('./lib/getToken');
 const {
-  houseListURLs, herokuURL, port, requestFrquency, lineTokens, subwayStationFilter,
+  houseListURLs, port, requestFrquency, lineTokens, subwayStationFilter, checkServiceStatus,
 } = require('./lib/getEnv');
 
 let serviceStatus = true;
@@ -22,9 +22,11 @@ houseListURLs.forEach(async (houseListURL) => {
       cookie = `urlJumpIp=${region}; ${cookie}`;
     }
 
-    serviceStatus = checkHerokuServiceStatus();
-    if (serviceStatus === false) {
-      clearInterval(stopIntervalId);
+    if (checkServiceStatus.enable) {
+      serviceStatus = isServiceAvailable(checkServiceStatus.url);
+      if (serviceStatus === false) {
+        clearInterval(stopIntervalId);
+      }
     }
 
     try {
@@ -111,8 +113,8 @@ function isSubwayStationNearby(destination, distance) {
   return true;
 }
 
-async function checkHerokuServiceStatus() {
-  const servicePing = await getRequest(`${herokuURL}/ping`);
+async function isServiceAvailable(url) {
+  const servicePing = await getRequest(url);
   if (servicePing.statusCode !== 200) {
     console.error('Ping fail plz check it.');
     return false;
