@@ -104,11 +104,11 @@ console.log(
 );
 
 function isSubwayStationNearby(destination, distance) {
-  // if (destination === '' || distance === '') return false;
+  if (destination === '' || distance === '') return false;
 
-  // destination = destination.slice(1);
-  // distance = parseInt(distance.slice(0, -2), 10);
-  // if (!subwayStationFilter.station.includes(destination)) return false;
+  destination = destination.slice(1);
+  distance = parseInt(distance.slice(0, -2), 10);
+  if (!subwayStationFilter.station.includes(destination)) return false;
   if (distance > subwayStationFilter.distance) return false;
   return true;
 }
