@@ -9,11 +9,10 @@ const {
 } = require('./lib/getEnv');
 
 let serviceStatus = true;
-let stopIntervalId;
 let countFail = 0;
 houseListURLs.forEach(async (houseListURL) => {
   let originPostId = await getFirstPostId(houseListURL);
-  stopIntervalId = setInterval(async () => {
+  const stopIntervalId = setInterval(async () => {
     const region = new URL(houseListURL).searchParams.get('region');
     const headerInfo = await getToken();
     const csrfToken = headerInfo[0];
@@ -43,6 +42,11 @@ houseListURLs.forEach(async (houseListURL) => {
         throw `Token 可能過期了，目前 StatusCode: ${resp.statusCode}`;
       }
       const { data } = resp.body.data;
+      const postIDList = data.map((rentDetail) => rentDetail.post_id);
+      if (postIDList.includes(originPostId) === false) {
+        [originPostId] = postIDList;
+      }
+
       for (const rentDetail of data) {
         const { post_id: postID } = rentDetail;
         const {
