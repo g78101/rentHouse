@@ -5,7 +5,8 @@ const sendLineNotify = require('./lib/sendLineNotify');
 const getFirstPostId = require('./lib/getFirstPostId');
 const getToken = require('./lib/getToken');
 const {
-  houseListURLs, port, requestFrquency, lineTokens, subwayStationFilter, checkServiceStatus,
+  houseListURLs, port, requestFrquency, lineTokens, checkServiceStatus,
+  subwayStationFilter, communityFilter,
 } = require('./lib/getEnv');
 
 let serviceStatus = true;
@@ -48,7 +49,7 @@ houseListURLs.forEach(async (houseListURL) => {
       }
 
       for (const rentDetail of data) {
-        const { post_id: postID } = rentDetail;
+        const { post_id: postID, community } = rentDetail;
         const {
           type: surroundingType = '',
           desc: destination = '',
@@ -56,6 +57,7 @@ houseListURLs.forEach(async (houseListURL) => {
         } = rentDetail.surrounding;
 
         if (postID === originPostId) break;
+        if (communityFilter.enable && !isFilterByCommunity(community)) continue;
         if (subwayStationFilter.enable
           && surroundingType === 'subway_station'
           && isSubwayStationNearby(destination, distance) === false
@@ -115,6 +117,17 @@ function isSubwayStationNearby(destination, distance) {
   if (!subwayStationFilter.station.includes(destination)) return false;
   if (distance > subwayStationFilter.distance) return false;
   return true;
+}
+
+function isFilterByCommunity(community) {
+  const result = communityFilter.filter.map(
+    ({ keyword, condition }) => {
+      if (condition === 'include') return community.includes(keyword);
+      if (condition === 'exclude') return !community.includes(keyword);
+      return false;
+    },
+  );
+  return result.every(Boolean);
 }
 
 async function isServiceAvailable(url) {
