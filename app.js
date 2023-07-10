@@ -2,8 +2,9 @@ const http = require('http');
 
 const { getRequest } = require('./lib/request');
 const sendLineNotify = require('./lib/sendLineNotify');
-const getFirstPostId = require('./lib/getFirstPostId');
+const getFirstId = require('./lib/getFirstId');
 const getToken = require('./lib/getToken');
+const {get591Type,getTypeId,getTypeUrl,getIdListAndElementList} = require('./lib/typeService');
 const {
   houseListURLs, port, requestFrquency, lineTokens, checkServiceStatus,
   subwayStationFilter, communityFilter,
@@ -12,7 +13,8 @@ const {
 let serviceStatus = true;
 let countFail = 0;
 houseListURLs.forEach(async (houseListURL) => {
-  let originPostId = await getFirstPostId(houseListURL);
+  let originId = await getFirstId(houseListURL);
+  const urlType = get591Type(houseListURL)
   const stopIntervalId = setInterval(async () => {
     const region = new URL(houseListURL).searchParams.get('region');
     const headerInfo = await getToken();
@@ -42,35 +44,22 @@ houseListURLs.forEach(async (houseListURL) => {
         // eslint-disable-next-line no-throw-literal
         throw `Token 可能過期了，目前 StatusCode: ${resp.statusCode}`;
       }
-      const { data } = resp.body.data;
-      const postIDList = data.map((rentDetail) => rentDetail.post_id);
-      if (postIDList.includes(originPostId) === false) {
-        [originPostId] = postIDList;
+      let {elementList, idList} = getIdListAndElementList(urlType,resp.body.data);
+      if (idList.includes(originId) === false) {
+        [originId] = idList;
       }
-
-      for (const rentDetail of data) {
-        const { post_id: postID, community } = rentDetail;
-        const {
-          type: surroundingType = '',
-          desc: destination = '',
-          distance = '',
-        } = rentDetail.surrounding;
-
-        if (postID === originPostId) break;
-        if (communityFilter.enable && !isFilterByCommunity(community)) continue;
-        if (subwayStationFilter.enable
-          && surroundingType === 'subway_station'
-          && isSubwayStationNearby(destination, distance) === false
-        ) continue;
-
+      for (const element of elementList) {
+        var id = getTypeId(urlType,element)
+        
+        if (id === originId) break;
         lineTokens.forEach(async (token) => {
           await sendLineNotify(
-            `\nhttps://rent.591.com.tw/rent-detail-${postID}.html`,
+            getTypeUrl(urlType,id),
             token,
           );
         });
       }
-      originPostId = data[0].post_id;
+      originId = getTypeId(urlType,elementList[0]);
     } catch (error) {
       if (countFail > 10) {
         lineTokens.forEach(async (token) => {
