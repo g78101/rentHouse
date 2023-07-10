@@ -27,7 +27,7 @@ npm install
 7. 設定 `.env`
     ```
     LINE_NOTIFY_TOKENS =               // the line notify token whitch you apply, example: ["123","456"]
-    TARGET_URL =                       // the url whitch you get from 591
+    TARGET_URLS =                       // the url whitch you get from 591, example: ["https://rent.591.com.tw/xxxxx","https://sale.591.com.tw/xxxxx","https://newhouse.591.com.tw/xxxxx"]
     REQUEST_FREQUENCY =                // at least 1000
     PORT =                             // 5000
     ENABLE_CHECK_SERVICE_STATUS =      // true or false
